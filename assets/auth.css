@@ -1,0 +1,18 @@
+.title-1 {
+    font-size: 24pt;
+    font-weight: bold;
+}
+
+.title-2 {
+    font-size: 20pt;
+    font-weight: bold;
+}
+
+.title-3 {
+    font-size: 16pt;
+    font-weight: bold;
+}
+
+.auth-box {
+    margin: 64px;
+}
