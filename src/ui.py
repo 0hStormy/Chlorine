@@ -1,8 +1,14 @@
+"""
+Frontend/UI for Chlorine, handles user actions and displays content to user.
+Made with <3 by Stormy
+"""
+
 import gi
 import os
 import platform
 import sys
 import threading
+import time
 import webbrowser
 import auth
 
@@ -60,11 +66,19 @@ class Chlorine(Gtk.Application):
         :param builder: GTK Builder instance
         :type builder: Gtk.Builder
         """
+
+        # Display linking code to end user
         code = auth.get_linking_code()
         code_label = builder.get_object("code_label")
         assert isinstance(code_label, Gtk.Label)
-
         code_label.set_markup(f"Code: <tt>{code}</tt>")
+
+        # Wait for user to link account
+        while True:
+            response = auth.try_get_token(code)
+            if response[0] is auth.LinkedStatus.LINKED:
+                break
+            time.sleep(2.5)
 
     def open_linking_page(self, *_):
         """Opens linking page in web browser"""
