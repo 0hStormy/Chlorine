@@ -2,6 +2,7 @@ import gi
 import os
 import platform
 import sys
+import webbrowser
 import auth
 
 gi.require_version("Gtk", "4.0")
@@ -28,6 +29,12 @@ class Chlorine(Gtk.Application):
         else:
             builder.add_from_file("../ui/auth.ui")
         win = builder.get_object("ChlorineAuth")
+        linking_button = builder.get_object("linking_button")
+
+        if linking_button is None:
+            raise RuntimeError("linking_button doesn't exist!")
+
+        linking_button.connect("clicked", self.open_linking_page)
 
         # Checks if GtkBuilder UI isn't broken
         if not isinstance(win, Gtk.ApplicationWindow):
@@ -41,6 +48,10 @@ class Chlorine(Gtk.Application):
         # Starts application
         win.set_application(self)
         win.present()
+
+    def open_linking_page(self, *_):
+        """Opens linking page in web browser"""
+        webbrowser.open("https://rotur.dev/link")
 
 
 def load_css(path: str):

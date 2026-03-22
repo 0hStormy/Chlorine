@@ -3,5 +3,5 @@
 <!-- Created with Cambalache 1.0 -->
 <cambalache-project version="1.0.0" target_tk="gtk-4.0">
   <css priority="600" is_global="1" filename="style.css" sha256="440f16a0662021879f375d3cc745f6d91aaceca847b3bb7b0457bc70b80181c3"/>
-  <ui filename="auth.ui" sha256="35a2572cf794ffd432da425438fca1d5ca72c5bd4de6adf54cdf7e1c10a8ab2c"/>
+  <ui filename="auth.ui" sha256="c7ce8904df456e7e49f2163f54f7a3e98ac9b83da62888dc95a7a259a0cf93a9"/>
 </cambalache-project>

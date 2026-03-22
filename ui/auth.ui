@@ -37,7 +37,7 @@
           </object>
         </child>
         <child>
-          <object class="GtkButton">
+          <object class="GtkButton" id="linking_button">
             <property name="halign">center</property>
             <property name="label">Open Linking Page</property>
           </object>
