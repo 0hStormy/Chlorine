@@ -44,6 +44,7 @@ class Chlorine(Gtk.Application):
         icon_theme.add_search_path("../assets")
         load_css("../ui/style.css")
 
+        # Auth thread
         thread = threading.Thread(target=self.auth_thread, args=(builder,))
         thread.start()
 
@@ -52,6 +53,13 @@ class Chlorine(Gtk.Application):
         win.present()
 
     def auth_thread(self, builder: Gtk.Builder) -> None:
+        """
+        Handles account linking on authentication UI.
+        Should be ran as a thread instead of a function.
+
+        :param builder: GTK Builder instance
+        :type builder: Gtk.Builder
+        """
         code = auth.get_linking_code()
         code_label = builder.get_object("code_label")
         assert isinstance(code_label, Gtk.Label)
@@ -86,7 +94,7 @@ def load_css(path: str):
 def set_system_theme():
     """
     Workaround to GTK 4 forcing Adwaita by default.
-    
+
     Couple limitations to this method of forcing the system theme:
         * If user changes theme, they will have to restart the app to apply
         * May just break in the future
