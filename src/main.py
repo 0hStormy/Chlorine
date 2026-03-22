@@ -24,39 +24,41 @@ class Chlorine(Gtk.Application):
         self.auth_thread_obj = None
 
     def do_activate(self):
-        """
-        UI initialization, consisting of building the UI via GtkBuilder,
-        loading custom icon theme and CSS, then presents application to user.
-        """
-
-        # Build UI from auth.ui XML
-        builder = Gtk.Builder()
-        if auth.is_authenticated():
-            builder.add_from_file("../ui/main.ui")
-        else:
-            builder.add_from_file("../ui/auth.ui")
-        win = builder.get_object("ChlorineAuth")
-        linking_button = builder.get_object("linking_button")
-
-        assert linking_button is not None
-
-        linking_button.connect("clicked", self.open_linking_page)
-
-        # Checks if GtkBuilder UI isn't broken
-        assert isinstance(win, Gtk.ApplicationWindow)
-
-        # Initialize custom icon theme and CSS
         icon_theme = Gtk.IconTheme.get_for_display(Gtk.Window().get_display())
         icon_theme.add_search_path("../assets")
         load_css("../ui/style.css")
 
-        # Auth thread
+        if auth.is_authenticated():
+            self.load_main_ui()
+        else:
+            self.load_auth_ui()
+
+    def load_main_ui(self):
+        builder = Gtk.Builder()
+        builder.add_from_file("../ui/main.ui")
+
+        win = builder.get_object("ChlorineMain")
+        assert isinstance(win, Gtk.ApplicationWindow)
+
+        win.set_application(self)
+        win.present()
+
+    def load_auth_ui(self):
+        builder = Gtk.Builder()
+        builder.add_from_file("../ui/auth.ui")
+
+        win = builder.get_object("ChlorineAuth")
+        assert isinstance(win, Gtk.ApplicationWindow)
+        linking_button = builder.get_object("linking_button")
+
+        assert linking_button is not None
+        linking_button.connect("clicked", self.open_linking_page)
+
         self.auth_thread_obj = threading.Thread(
             target=self.auth_thread, args=(builder,), daemon=True
         )
         self.auth_thread_obj.start()
 
-        # Starts application
         win.set_application(self)
         win.present()
 
@@ -79,7 +81,7 @@ class Chlorine(Gtk.Application):
         while True:
             response = auth.try_get_token(code)
             if response[0] is auth.LinkedStatus.LINKED:
-                config.write_to_config("token", response[1])
+                GLib.idle_add(self.load_main_ui)
                 break
             time.sleep(2.5)
 
