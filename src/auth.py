@@ -5,6 +5,7 @@ Made with <3 by Stormy
 
 import requests
 from enum import Enum
+import config
 
 
 class LinkedStatus(Enum):
@@ -46,3 +47,14 @@ def try_get_token(code: str) -> tuple[LinkedStatus, str]:
         link_status = LinkedStatus.UNLINKED
         token = ""
     return (link_status, token)
+
+
+def is_authenticated() -> bool:
+    """
+    Checks if user is authenticated with Rotur based on token in config file.
+    
+    :return: If user is authenticated
+    :rtype: bool
+    """
+    token = config.read_from_config("token")
+    return True if token != "" else False

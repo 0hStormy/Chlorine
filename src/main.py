@@ -11,12 +11,10 @@ import threading
 import time
 import webbrowser
 import auth
+import config
 
 gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk, Gdk, Gio  # type: ignore
-
-
-AUTHENTICATED = False
 
 
 class Chlorine(Gtk.Application):
@@ -33,7 +31,7 @@ class Chlorine(Gtk.Application):
 
         # Build UI from auth.ui XML
         builder = Gtk.Builder()
-        if AUTHENTICATED:
+        if auth.is_authenticated():
             builder.add_from_file("../ui/main.ui")
         else:
             builder.add_from_file("../ui/auth.ui")
@@ -81,13 +79,13 @@ class Chlorine(Gtk.Application):
         while True:
             response = auth.try_get_token(code)
             if response[0] is auth.LinkedStatus.LINKED:
+                config.write_to_config("token", response[1])
                 break
             time.sleep(2.5)
 
     def open_linking_page(self, *_):
         """Opens linking page in web browser"""
         webbrowser.open("https://rotur.dev/link")
-
 
 def load_css(path: str):
     """
@@ -150,8 +148,9 @@ def set_system_theme():
 
 
 if __name__ == "__main__":
-    set_system_theme()
     try:
+        set_system_theme()
+        config.create_config()
         app = Chlorine()
         app.run(sys.argv)
     except KeyboardInterrupt:

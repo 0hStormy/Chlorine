@@ -1,7 +1,7 @@
-- [ ] Authenticate with Rotur account system
+- [x] Authenticate with Rotur account system
     - [x] Get linking code
     - [x] Get token
-    - [ ] Save token
+    - [x] Save token
     - [x] Create UI
 - [ ] Websocket connection
     - [ ] Server authentication
