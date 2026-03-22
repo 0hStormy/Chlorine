@@ -2,6 +2,6 @@
 <!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
 <!-- Created with Cambalache 1.0 -->
 <cambalache-project version="1.0.0" target_tk="gtk-4.0">
-  <css priority="600" is_global="1" filename="style.css" sha256="635077aa719aa12e3e9c72c78163fecdf941f14ec346303f15d1cf06f7110a3b"/>
-  <ui filename="auth.ui" sha256="2fc60ccb13faa11cc0f32c31c242647c812f70413afd2879bfc476757f18f8c3"/>
+  <css priority="600" is_global="1" filename="style.css" sha256="440f16a0662021879f375d3cc745f6d91aaceca847b3bb7b0457bc70b80181c3"/>
+  <ui filename="auth.ui" sha256="35a2572cf794ffd432da425438fca1d5ca72c5bd4de6adf54cdf7e1c10a8ab2c"/>
 </cambalache-project>

@@ -2,9 +2,13 @@ import gi
 import os
 import platform
 import sys
+import auth
 
 gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk, Gdk, Gio  # type: ignore
+
+
+AUTHENTICATED = False
 
 
 class Chlorine(Gtk.Application):
@@ -19,7 +23,10 @@ class Chlorine(Gtk.Application):
 
         # Build UI from auth.ui XML
         builder = Gtk.Builder()
-        builder.add_from_file("../ui/auth.ui")
+        if AUTHENTICATED:
+            builder.add_from_file("../ui/main.ui")
+        else:
+            builder.add_from_file("../ui/auth.ui")
         win = builder.get_object("ChlorineAuth")
 
         # Checks if GtkBuilder UI isn't broken
@@ -57,7 +64,13 @@ def load_css(path: str):
 
 
 def set_system_theme():
-    """Workaround to GTK 4 forcing Adwaita by default"""
+    """
+    Workaround to GTK 4 forcing Adwaita by default.
+    
+    Couple limitations to this method of forcing the system theme:
+        * If user changes theme, they will have to restart the app to apply
+        * May just break in the future
+    """
 
     # Ignore if platform isn't Linux
     if platform.system() != "Linux":
