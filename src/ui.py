@@ -22,6 +22,8 @@ AUTHENTICATED = False
 class Chlorine(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.xhlowi.Chlorine")
+        self.stop_event = threading.Event()
+        self.auth_thread_obj = None
 
     def do_activate(self):
         """
@@ -51,8 +53,10 @@ class Chlorine(Gtk.Application):
         load_css("../ui/style.css")
 
         # Auth thread
-        thread = threading.Thread(target=self.auth_thread, args=(builder,))
-        thread.start()
+        self.auth_thread_obj = threading.Thread(
+            target=self.auth_thread, args=(builder,), daemon=True
+        )
+        self.auth_thread_obj.start()
 
         # Starts application
         win.set_application(self)
@@ -147,5 +151,8 @@ def set_system_theme():
 
 if __name__ == "__main__":
     set_system_theme()
-    app = Chlorine()
-    app.run(sys.argv)
+    try:
+        app = Chlorine()
+        app.run(sys.argv)
+    except KeyboardInterrupt:
+        quit(0)
