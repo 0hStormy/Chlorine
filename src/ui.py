@@ -2,6 +2,7 @@ import gi
 import os
 import platform
 import sys
+import threading
 import webbrowser
 import auth
 
@@ -31,23 +32,31 @@ class Chlorine(Gtk.Application):
         win = builder.get_object("ChlorineAuth")
         linking_button = builder.get_object("linking_button")
 
-        if linking_button is None:
-            raise RuntimeError("linking_button doesn't exist!")
+        assert linking_button is not None
 
         linking_button.connect("clicked", self.open_linking_page)
 
         # Checks if GtkBuilder UI isn't broken
-        if not isinstance(win, Gtk.ApplicationWindow):
-            raise RuntimeError("ChlorineAuth doesn't exist")
+        assert isinstance(win, Gtk.ApplicationWindow)
 
         # Initialize custom icon theme and CSS
         icon_theme = Gtk.IconTheme.get_for_display(Gtk.Window().get_display())
         icon_theme.add_search_path("../assets")
         load_css("../ui/style.css")
 
+        thread = threading.Thread(target=self.auth_thread, args=(builder,))
+        thread.start()
+
         # Starts application
         win.set_application(self)
         win.present()
+
+    def auth_thread(self, builder: Gtk.Builder) -> None:
+        code = auth.get_linking_code()
+        code_label = builder.get_object("code_label")
+        assert isinstance(code_label, Gtk.Label)
+
+        code_label.set_markup(f"Code: <tt>{code}</tt>")
 
     def open_linking_page(self, *_):
         """Opens linking page in web browser"""
