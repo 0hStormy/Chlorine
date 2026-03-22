@@ -4,12 +4,14 @@
   <!-- interface-name auth.ui -->
   <requires lib="gtk" version="4.0"/>
   <object class="GtkApplicationWindow" id="ChlorineAuth">
-    <property name="default-height">600</property>
-    <property name="default-width">480</property>
     <property name="title">Login - Chlorine</property>
     <property name="visible">true</property>
     <child>
       <object class="GtkBox">
+        <property name="margin-bottom">32</property>
+        <property name="margin-end">32</property>
+        <property name="margin-start">32</property>
+        <property name="margin-top">32</property>
         <property name="orientation">vertical</property>
         <property name="spacing">8</property>
         <property name="valign">center</property>
