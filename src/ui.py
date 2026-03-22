@@ -75,7 +75,7 @@ class Chlorine(Gtk.Application):
         code = auth.get_linking_code()
         code_label = builder.get_object("code_label")
         assert isinstance(code_label, Gtk.Label)
-        code_label.set_markup(f"Code: <tt>{code}</tt>")
+        GLib.idle_add(code_label.set_markup, f"Code: <tt>{code}</tt>")
 
         # Wait for user to link account
         while True:
@@ -155,4 +155,4 @@ if __name__ == "__main__":
         app = Chlorine()
         app.run(sys.argv)
     except KeyboardInterrupt:
-        quit(0)
+        sys.exit(0)
