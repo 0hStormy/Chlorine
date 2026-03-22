@@ -2,7 +2,7 @@
     - [x] Get linking code
     - [x] Get token
     - [ ] Save token
-    - [ ] Create UI
+    - [x] Create UI
 - [ ] Websocket connection
     - [ ] Server authentication
     - [ ] Basic command set
