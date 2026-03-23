@@ -8,7 +8,7 @@ class Server:
     def __init__(self, url) -> None:
         """
         originChats server instance
-        
+
         :param url: URL to websocket server
         """
         self.url = url
@@ -21,7 +21,7 @@ class Server:
     def generate_validator(validator_key: str, token: str) -> str:
         """
         Generates a originChats validator token
-        
+
         :param validator_key: Unique handshake key
         :type validator_key: str
         :param token: User token
@@ -47,7 +47,7 @@ class Server:
             commands = {
                 "handshake": self.handshake,
                 "auth_success": self.auth_success,
-                "ready": self.ready
+                "ready": self.ready,
             }
             while True:
                 raw = await self.websocket.recv()
@@ -79,7 +79,7 @@ class Server:
             "validator": validator_token,
         }
         await self.websocket.send(json.dumps(payload))
-    
+
     async def auth_success(self):
         """
         Handle successful authentication with server
