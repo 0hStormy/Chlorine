@@ -4,6 +4,8 @@ Made with <3 by Stormy
 """
 
 import gi
+import aiohttp
+import asyncio
 import os
 import platform
 import sys
@@ -12,6 +14,7 @@ import time
 import webbrowser
 import auth
 import config
+import ws
 
 gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk, Gdk, Gio  # type: ignore
@@ -39,6 +42,10 @@ class Chlorine(Gtk.Application):
 
         win = builder.get_object("ChlorineMain")
         assert isinstance(win, Gtk.ApplicationWindow)
+
+        threading.Thread(
+            target=self.load_server_buttons_async, args=(builder,), daemon=True
+        ).start()
 
         win.set_application(self)
         win.present()
@@ -90,9 +97,74 @@ class Chlorine(Gtk.Application):
         """Opens linking page in web browser"""
         webbrowser.open("https://rotur.dev/link")
 
+    async def load_server_buttons(self, builder: Gtk.Builder):
+        """
+        Taskify all servers and gather them to load the server buttons
+
+        :param builder: GTK Builder instance
+        :type builder: Gtk.Builder
+        """
+        servers = config.read_from_config("servers")
+        server_box = builder.get_object("server_list")
+        assert isinstance(server_box, Gtk.Box)
+        tasks = [
+            self.process_server(server, server_box) for server in reversed(servers)
+        ]
+        await asyncio.gather(*tasks)
+
+    async def process_server(self, server, server_box: Gtk.Box):
+        """
+        Add a single server to server list
+
+        :param server: Server list
+        :param server_box: Gtk.Box to add to
+        """
+        info = (await ws.get_server_info(server))["val"]["server"]
+
+        image = Gtk.Image.new_from_icon_name("network-disconnect")
+
+        button = Gtk.Button()
+        button.set_child(image)
+        button.set_size_request(48, 48)
+        button.set_tooltip_text(info["name"])
+
+        GLib.idle_add(server_box.prepend, button)
+
+        await load_server_icon(info["icon"], button)
+
+    def load_server_buttons_async(self, builder):
+        """
+        Loads server buttons async
+
+        :param self: Description
+        :param builder: Description
+        """
+        asyncio.run(self.load_server_buttons(builder))
+
+
+async def load_server_icon(url: str, widget: Gtk.Button):
+    """
+    Downloads a single server icon and apply it to a widget's child
+
+    :param url: URL to icon
+    :type url: str
+    :param widget: Widget to set child Gtk.Image on
+    :type widget: Gtk.Button
+    """
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            data = await resp.read()
+
+    texture = Gdk.Texture.new_from_bytes(GLib.Bytes.new(data))
+    image = Gtk.Image.new_from_paintable(texture)
+    image.set_pixel_size(34)
+
+    GLib.idle_add(widget.set_child, image)
+
+
 def load_css(path: str):
     """
-    Load GTK CSS from given file patth
+    Load GTK CSS from given file path
 
     :param path: Path to CSS stylesheet
     :type path: str

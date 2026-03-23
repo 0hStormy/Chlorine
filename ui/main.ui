@@ -14,36 +14,29 @@
           <object class="GtkScrolledWindow">
             <property name="width-request">60</property>
             <child>
-              <object class="GtkBox">
+              <object class="GtkBox" id="server_list">
                 <property name="margin-bottom">6</property>
                 <property name="margin-end">6</property>
                 <property name="margin-start">6</property>
                 <property name="margin-top">6</property>
+                <property name="orientation">vertical</property>
+                <property name="spacing">6</property>
                 <child>
-                  <object class="GtkBox">
-                    <property name="baseline-position">bottom</property>
-                    <property name="halign">baseline</property>
-                    <property name="orientation">vertical</property>
-                    <property name="spacing">6</property>
+                  <object class="GtkButton">
+                    <property name="height-request">48</property>
+                    <property name="icon-name">list-add</property>
+                    <property name="tooltip-text">Add Server</property>
                     <property name="valign">end</property>
-                    <child>
-                      <object class="GtkButton">
-                        <property name="height-request">48</property>
-                        <property name="icon-name">list-add</property>
-                        <property name="tooltip-text">Add Server</property>
-                        <property name="valign">end</property>
-                        <property name="width-request">48</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkButton">
-                        <property name="height-request">48</property>
-                        <property name="icon-name">preferences-system-symbolic</property>
-                        <property name="tooltip-text">Settings</property>
-                        <property name="valign">end</property>
-                        <property name="width-request">48</property>
-                      </object>
-                    </child>
+                    <property name="width-request">48</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton">
+                    <property name="height-request">48</property>
+                    <property name="icon-name">preferences-system-symbolic</property>
+                    <property name="tooltip-text">Settings</property>
+                    <property name="valign">end</property>
+                    <property name="width-request">48</property>
                   </object>
                 </child>
               </object>
