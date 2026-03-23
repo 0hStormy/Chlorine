@@ -43,8 +43,16 @@ class Chlorine(Gtk.Application):
         win = builder.get_object("ChlorineMain")
         assert isinstance(win, Gtk.ApplicationWindow)
 
+        # Load server list buttotns
         threading.Thread(
             target=self.load_server_buttons_async, args=(builder,), daemon=True
+        ).start()
+
+        # Connect to originChats server
+        server = ws.Server(config.read_from_config("servers")[0])
+        threading.Thread(
+            target=lambda: asyncio.run(server.listen()),
+            daemon=True
         ).start()
 
         win.set_application(self)
@@ -61,10 +69,9 @@ class Chlorine(Gtk.Application):
         assert linking_button is not None
         linking_button.connect("clicked", self.open_linking_page)
 
-        self.auth_thread_obj = threading.Thread(
+        threading.Thread(
             target=self.auth_thread, args=(builder,), daemon=True
-        )
-        self.auth_thread_obj.start()
+        ).start()
 
         win.set_application(self)
         win.present()
