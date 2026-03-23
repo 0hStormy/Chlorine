@@ -19,7 +19,7 @@ from gi.repository import GLib, Gtk, Gdk, Gio  # type: ignore
 
 class Chlorine(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id="com.xhlowi.Chlorine")
+        super().__init__(application_id="xyz.xhlowi.Chlorine")
         self.stop_event = threading.Event()
         self.auth_thread_obj = None
 

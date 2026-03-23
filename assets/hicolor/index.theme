@@ -1,6 +1,14 @@
 [Icon Theme]
 Name=originChats
-Directories=scalable/status
+Directories=scalable/status,scalable/apps,scalable/actions
+
+[scalable/apps]
+Size=64
+Type=Scalable
+
+[scalable/status]
+Size=16
+Type=Scalable
 
 [scalable/actions]
 Size=16

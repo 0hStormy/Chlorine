@@ -6,6 +6,8 @@
   <object class="GtkApplicationWindow" id="ChlorineMain">
     <property name="default-height">600</property>
     <property name="default-width">800</property>
+    <property name="icon-name">xyz.xhlowi.Chlorine</property>
+    <property name="title">Chlorine</property>
     <child>
       <object class="GtkBox">
         <child>
