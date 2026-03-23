@@ -3,6 +3,6 @@
     - [x] Get token
     - [x] Save token
     - [x] Create UI
-- [ ] Websocket connection
-    - [ ] Server authentication
+- [x] Websocket connection
+    - [x] Server authentication
     - [ ] Basic command set
