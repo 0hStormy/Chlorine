@@ -81,6 +81,7 @@ class Chlorine(Gtk.Application):
         while True:
             response = auth.try_get_token(code)
             if response[0] is auth.LinkedStatus.LINKED:
+                config.write_to_config("token", response[1])
                 GLib.idle_add(self.load_main_ui)
                 break
             time.sleep(2.5)
@@ -127,7 +128,10 @@ def set_system_theme():
     theme = settings.get_string("gtk-theme")
     icon_theme = settings.get_string("icon-theme")
     os.environ["GTK_THEME"] = theme
-    os.environ["GTK_ICON_THEME"] = icon_theme
+
+    default_settings = Gtk.Settings.get_default()
+    assert default_settings
+    default_settings.set_property("gtk-icon-theme-name", icon_theme)
 
     # Set font size to the system font size
     font = settings.get_string("font-name").split()[1]

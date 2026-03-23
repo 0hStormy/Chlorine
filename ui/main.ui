@@ -4,18 +4,52 @@
   <!-- interface-name main.ui -->
   <requires lib="gtk" version="4.6"/>
   <object class="GtkApplicationWindow" id="ChlorineMain">
+    <property name="default-height">600</property>
+    <property name="default-width">800</property>
     <child>
       <object class="GtkBox">
-        <property name="halign">center</property>
-        <property name="margin-bottom">64</property>
-        <property name="margin-end">64</property>
-        <property name="margin-start">64</property>
-        <property name="margin-top">64</property>
         <child>
-          <object class="GtkLabel">
-            <property name="justify">center</property>
-            <property name="label">Stub UI</property>
+          <object class="GtkScrolledWindow">
+            <property name="width-request">60</property>
+            <child>
+              <object class="GtkBox">
+                <property name="margin-bottom">6</property>
+                <property name="margin-end">6</property>
+                <property name="margin-start">6</property>
+                <property name="margin-top">6</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="baseline-position">bottom</property>
+                    <property name="halign">baseline</property>
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <property name="valign">end</property>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="height-request">48</property>
+                        <property name="icon-name">list-add</property>
+                        <property name="tooltip-text">Add Server</property>
+                        <property name="valign">end</property>
+                        <property name="width-request">48</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="height-request">48</property>
+                        <property name="icon-name">preferences-system-symbolic</property>
+                        <property name="tooltip-text">Settings</property>
+                        <property name="valign">end</property>
+                        <property name="width-request">48</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
           </object>
+        </child>
+        <child>
+          <object class="GtkSeparator"/>
         </child>
       </object>
     </child>
