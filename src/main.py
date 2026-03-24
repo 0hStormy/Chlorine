@@ -17,7 +17,7 @@ import config
 import ws
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import GLib, Gtk, Gdk, Gio  # type: ignore
+from gi.repository import GLib, Gtk, Gdk, Gio, Pango  # type: ignore
 
 
 class Chlorine(Gtk.Application):
@@ -52,8 +52,7 @@ class Chlorine(Gtk.Application):
 
         # Connect to originChats server
         server = ws.Server(
-            config.read_from_config("servers")[0],
-            on_event=self.handle_ws_event
+            config.read_from_config("servers")[0], on_event=self.handle_ws_event
         )
         threading.Thread(
             target=lambda: asyncio.run(server.listen()), daemon=True
@@ -173,7 +172,7 @@ class Chlorine(Gtk.Application):
         # Channel list
         container = self.builder.get_object("channel_list")
         assert isinstance(container, Gtk.Box)
-        
+
         # Build channel list widgets
         for channel in channels:
             match channel["type"]:
@@ -217,19 +216,33 @@ class Chlorine(Gtk.Application):
         assert isinstance(container, Gtk.Box)
 
         for message in messages:
+            # Base message box
             message_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+
+            # Profile picture
             pfp = Gtk.Image.new_from_icon_name("user")
+            pfp.set_valign(Gtk.Align.START)
             message_box.append(pfp)
+
+            # Content box
             content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+
+            # Username label
             user_label = Gtk.Label(label=message["user"])
             user_label.set_halign(Gtk.Align.START)
+
+            # Message content
             message_content = Gtk.Label(label=message["content"])
+            message_content.set_wrap(True)
+            message_content.set_wrap_mode(Pango.WrapMode.WORD)
             message_content.set_halign(Gtk.Align.START)
+            message_content.set_selectable(True)
             content_box.append(user_label)
             content_box.append(message_content)
+
+            # Append to widget tree
             message_box.append(content_box)
             container.append(message_box)
-
 
 
 async def load_server_icon(url: str, widget: Gtk.Button):

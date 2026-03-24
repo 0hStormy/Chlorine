@@ -52,7 +52,7 @@ class Server:
                 "auth_success": self.auth_success,
                 "ready": self.ready,
                 "channels_get": self.channels_get,
-                "messages_get": self.messages_get
+                "messages_get": self.messages_get,
             }
             while True:
                 raw = await self.websocket.recv()
@@ -118,7 +118,6 @@ class Server:
         # Get messages
         payload = {"cmd": "messages_get", "channel": self.channel}
         await self.websocket.send(json.dumps(payload))
-        
 
     async def channels_get(self):
         """
@@ -139,6 +138,7 @@ class Server:
 
         if self.on_event:
             self.on_event("messages_get", messages)
+
 
 async def get_server_info(url: str) -> dict:
     """
