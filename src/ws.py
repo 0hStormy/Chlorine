@@ -18,6 +18,7 @@ class Server:
         self.data = {}
         self.user = {}
         self.validator = ""
+        self.channel = "general"
 
     @staticmethod
     def generate_validator(validator_key: str, token: str) -> str:
@@ -51,6 +52,7 @@ class Server:
                 "auth_success": self.auth_success,
                 "ready": self.ready,
                 "channels_get": self.channels_get,
+                "messages_get": self.messages_get
             }
             while True:
                 raw = await self.websocket.recv()
@@ -112,11 +114,15 @@ class Server:
         # Get channels
         payload = {"cmd": "channels_get"}
         await self.websocket.send(json.dumps(payload))
+
+        # Get messages
+        payload = {"cmd": "messages_get", "channel": self.channel}
+        await self.websocket.send(json.dumps(payload))
         
 
     async def channels_get(self):
         """
-        Handles getting channels from server and adding them to UI.
+        Handles getting channels from server and adding them to UI
         """
         assert self.websocket is not None
         channels = self.data["val"]
@@ -124,6 +130,15 @@ class Server:
         if self.on_event:
             self.on_event("channels_get", channels)
 
+    async def messages_get(self):
+        """
+        Handles getting messages from server and adding them to UI
+        """
+        assert self.websocket is not None
+        messages = self.data["messages"]
+
+        if self.on_event:
+            self.on_event("messages_get", messages)
 
 async def get_server_info(url: str) -> dict:
     """

@@ -156,6 +156,8 @@ class Chlorine(Gtk.Application):
             GLib.idle_add(self.set_server_name, data)
         if event_type == "channels_get":
             GLib.idle_add(self.build_channel_list, data)
+        if event_type == "messages_get":
+            GLib.idle_add(self.build_messages_list, data)
 
     def set_server_name(self, data):
         assert self.builder is not None
@@ -206,6 +208,28 @@ class Chlorine(Gtk.Application):
                 case "separator":
                     separator = Gtk.Separator()
                     container.append(separator)
+
+    def build_messages_list(self, messages):
+        assert self.builder is not None
+
+        # Messages list
+        container = self.builder.get_object("messages_list")
+        assert isinstance(container, Gtk.Box)
+
+        for message in messages:
+            message_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            pfp = Gtk.Image.new_from_icon_name("user")
+            message_box.append(pfp)
+            content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+            user_label = Gtk.Label(label=message["user"])
+            user_label.set_halign(Gtk.Align.START)
+            message_content = Gtk.Label(label=message["content"])
+            message_content.set_halign(Gtk.Align.START)
+            content_box.append(user_label)
+            content_box.append(message_content)
+            message_box.append(content_box)
+            container.append(message_box)
+
 
 
 async def load_server_icon(url: str, widget: Gtk.Button):
