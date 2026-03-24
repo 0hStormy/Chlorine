@@ -45,18 +45,36 @@ class Chlorine(Gtk.Application):
         win = builder.get_object("ChlorineMain")
         assert isinstance(win, Gtk.ApplicationWindow)
 
-        # Load server list buttotns
+        # Load server list buttons
         threading.Thread(
-            target=self.load_server_buttons_async, args=(builder,), daemon=True
+            target=self.server_buttons_async, args=(builder,), daemon=True
         ).start()
 
         # Connect to originChats server
+        selected_server = config.read_from_config("servers")[0]
         server = ws.Server(
-            config.read_from_config("servers")[0], on_event=self.handle_ws_event
+            selected_server, on_event=self.handle_ws_event
         )
         threading.Thread(
             target=lambda: asyncio.run(server.listen()), daemon=True
         ).start()
+
+        send_msg_button = builder.get_object("send_message")
+        assert isinstance(send_msg_button, Gtk.Button)
+        entry = builder.get_object("message_entry")
+        assert isinstance(entry, Gtk.Entry)
+
+        def on_send(btn):
+            text = entry.get_text()
+            entry.set_text("")
+            assert isinstance(server.loop, asyncio.AbstractEventLoop)
+            asyncio.run_coroutine_threadsafe(
+                server.send_message(text),
+                server.loop
+            )
+
+        send_msg_button.connect("clicked", on_send)
+        entry.connect("activate", on_send)
 
         win.set_application(self)
         win.present()
@@ -141,7 +159,7 @@ class Chlorine(Gtk.Application):
 
         await load_server_icon(info["icon"], button)
 
-    def load_server_buttons_async(self, builder: Gtk.Builder):
+    def server_buttons_async(self, builder: Gtk.Builder):
         """
         Loads server buttons async
 

@@ -1,5 +1,6 @@
 import requests
 import websockets
+import asyncio
 import json
 import config
 
@@ -11,6 +12,7 @@ class Server:
 
         :param url: URL to websocket server
         """
+        self.loop: asyncio.AbstractEventLoop | None = None
         self.url = url
         self.on_event = on_event
         self.websocket: websockets.ClientConnection | None = None
@@ -45,6 +47,9 @@ class Server:
         """
         Start websocket connect with an originChats server
         """
+        loop = asyncio.get_running_loop()
+        self.loop = loop
+
         async with websockets.connect(self.url) as websocket:
             self.websocket = websocket
             commands = {
@@ -65,6 +70,18 @@ class Server:
                     await handler()
                 else:
                     print(f"Unhandled cmd: {cmd}", data)
+
+    async def send_message(self, content):
+        """
+        Send a user message to server via message_new cmd
+        """
+        assert self.websocket is not None
+        payload = {
+            "cmd": "message_new",
+            "channel": self.channel,
+            "content": content
+        }
+        await self.websocket.send(json.dumps(payload))
 
     async def handshake(self):
         """
