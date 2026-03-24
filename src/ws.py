@@ -5,14 +5,16 @@ import config
 
 
 class Server:
-    def __init__(self, url) -> None:
+    def __init__(self, url: str, on_event=None) -> None:
         """
         originChats server instance
 
         :param url: URL to websocket server
         """
         self.url = url
+        self.on_event = on_event
         self.websocket: websockets.ClientConnection | None = None
+        self.handshake_data = {}
         self.data = {}
         self.user = {}
         self.validator = ""
@@ -48,6 +50,7 @@ class Server:
                 "handshake": self.handshake,
                 "auth_success": self.auth_success,
                 "ready": self.ready,
+                "channels_get": self.channels_get,
             }
             while True:
                 raw = await self.websocket.recv()
@@ -65,6 +68,9 @@ class Server:
         Handle handshake and authentication with server
         """
         assert self.websocket is not None
+
+        # Keep handshake data for later
+        self.handshake_data = self.data
 
         # Extract data
         token = config.read_from_config("token")
@@ -99,6 +105,24 @@ class Server:
 
         # Confirm readiness to user
         print(f"Logged in as {self.user["nickname"]} ({self.user["username"]})")
+
+        if self.on_event:
+            self.on_event("ready", self.handshake_data)
+
+        # Get channels
+        payload = {"cmd": "channels_get"}
+        await self.websocket.send(json.dumps(payload))
+        
+
+    async def channels_get(self):
+        """
+        Handles getting channels from server and adding them to UI.
+        """
+        assert self.websocket is not None
+        channels = self.data["val"]
+
+        if self.on_event:
+            self.on_event("channels_get", channels)
 
 
 async def get_server_info(url: str) -> dict:

@@ -25,6 +25,7 @@ class Chlorine(Gtk.Application):
         super().__init__(application_id="xyz.xhlowi.Chlorine")
         self.stop_event = threading.Event()
         self.auth_thread_obj = None
+        self.builder: Gtk.Builder | None = None
 
     def do_activate(self):
         icon_theme = Gtk.IconTheme.get_for_display(Gtk.Window().get_display())
@@ -39,6 +40,7 @@ class Chlorine(Gtk.Application):
     def load_main_ui(self):
         builder = Gtk.Builder()
         builder.add_from_file("../ui/main.ui")
+        self.builder = builder
 
         win = builder.get_object("ChlorineMain")
         assert isinstance(win, Gtk.ApplicationWindow)
@@ -49,7 +51,10 @@ class Chlorine(Gtk.Application):
         ).start()
 
         # Connect to originChats server
-        server = ws.Server(config.read_from_config("servers")[0])
+        server = ws.Server(
+            config.read_from_config("servers")[0],
+            on_event=self.handle_ws_event
+        )
         threading.Thread(
             target=lambda: asyncio.run(server.listen()), daemon=True
         ).start()
@@ -60,6 +65,7 @@ class Chlorine(Gtk.Application):
     def load_auth_ui(self):
         builder = Gtk.Builder()
         builder.add_from_file("../ui/auth.ui")
+        self.builder = builder
 
         win = builder.get_object("ChlorineAuth")
         assert isinstance(win, Gtk.ApplicationWindow)
@@ -144,6 +150,62 @@ class Chlorine(Gtk.Application):
         :param builder: Description
         """
         asyncio.run(self.load_server_buttons(builder))
+
+    def handle_ws_event(self, event_type, data):
+        if event_type == "ready":
+            GLib.idle_add(self.set_server_name, data)
+        if event_type == "channels_get":
+            GLib.idle_add(self.build_channel_list, data)
+
+    def set_server_name(self, data):
+        assert self.builder is not None
+
+        # Get widget and set title
+        server_name_label = self.builder.get_object("server_name_label")
+        assert isinstance(server_name_label, Gtk.Label)
+        server_name_label.set_text(data["val"]["server"]["name"])
+
+    def build_channel_list(self, channels):
+        assert self.builder is not None
+
+        # Channel list
+        container = self.builder.get_object("channel_list")
+        assert isinstance(container, Gtk.Box)
+        
+        # Build channel list widgets
+        for channel in channels:
+            match channel["type"]:
+                case "text":
+                    box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+
+                    image = Gtk.Image.new_from_icon_name("message-new")
+                    label = Gtk.Label(label=channel["name"])
+                    label.set_halign(Gtk.Align.START)
+
+                    box.append(image)
+                    box.append(label)
+
+                    button = Gtk.Button(css_classes=["flat"])
+                    button.set_child(box)
+
+                    container.append(button)
+                case "voice":
+                    box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+
+                    image = Gtk.Image.new_from_icon_name("call-start")
+                    label = Gtk.Label(label=channel["name"])
+                    label.set_halign(Gtk.Align.START)
+
+                    box.append(image)
+                    box.append(label)
+
+                    button = Gtk.Button(css_classes=["flat"])
+                    button.set_child(box)
+
+                    container.append(button)
+                case "separator":
+                    separator = Gtk.Separator()
+                    container.append(separator)
 
 
 async def load_server_icon(url: str, widget: Gtk.Button):

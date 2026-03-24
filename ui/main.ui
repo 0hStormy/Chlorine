@@ -48,6 +48,34 @@
         </child>
         <child>
           <object class="GtkBox">
+            <property name="baseline-position">top</property>
+            <property name="margin-bottom">6</property>
+            <property name="margin-end">6</property>
+            <property name="margin-start">6</property>
+            <property name="margin-top">6</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkLabel" id="server_name_label">
+                <property name="label">Unknown Server</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSeparator"/>
+            </child>
+            <child>
+              <object class="GtkBox" id="channel_list">
+                <property name="orientation">vertical</property>
+                <property name="spacing">6</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSeparator"/>
+        </child>
+        <child>
+          <object class="GtkBox">
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkScrolledWindow">
