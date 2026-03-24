@@ -52,7 +52,7 @@ def try_get_token(code: str) -> tuple[LinkedStatus, str]:
 def is_authenticated() -> bool:
     """
     Checks if user is authenticated with Rotur based on token in config file.
-    
+
     :return: If user is authenticated
     :rtype: bool
     """

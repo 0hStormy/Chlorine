@@ -51,8 +51,7 @@ class Chlorine(Gtk.Application):
         # Connect to originChats server
         server = ws.Server(config.read_from_config("servers")[0])
         threading.Thread(
-            target=lambda: asyncio.run(server.listen()),
-            daemon=True
+            target=lambda: asyncio.run(server.listen()), daemon=True
         ).start()
 
         win.set_application(self)
@@ -69,9 +68,7 @@ class Chlorine(Gtk.Application):
         assert linking_button is not None
         linking_button.connect("clicked", self.open_linking_page)
 
-        threading.Thread(
-            target=self.auth_thread, args=(builder,), daemon=True
-        ).start()
+        threading.Thread(target=self.auth_thread, args=(builder,), daemon=True).start()
 
         win.set_application(self)
         win.present()
