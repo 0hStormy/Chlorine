@@ -141,7 +141,7 @@ class Chlorine(Gtk.Application):
 
         await load_server_icon(info["icon"], button)
 
-    def load_server_buttons_async(self, builder):
+    def load_server_buttons_async(self, builder: Gtk.Builder):
         """
         Loads server buttons async
 
@@ -150,15 +150,31 @@ class Chlorine(Gtk.Application):
         """
         asyncio.run(self.load_server_buttons(builder))
 
-    def handle_ws_event(self, event_type, data):
-        if event_type == "ready":
-            GLib.idle_add(self.set_server_name, data)
-        if event_type == "channels_get":
-            GLib.idle_add(self.build_channel_list, data)
-        if event_type == "messages_get":
-            GLib.idle_add(self.build_messages_list, data)
+    def handle_ws_event(self, event_type: str, data) -> None:
+        """
+        Bridge between websocket connection and frontend UI
+        
+        :param event_type: Event sent from server
+        :type event_type: str
+        :param data: Data sent from bridge
+        """
+        match event_type:
+            case "ready":
+                GLib.idle_add(self.set_server_name, data)
+            case "channels_get":
+                GLib.idle_add(self.build_channel_list, data)
+            case "messages_get":
+                GLib.idle_add(self.build_messages_list, data)
 
-    def set_server_name(self, data):
+    def set_server_name(self, data: dict):
+        """
+        Sets name of server in channel list
+
+        Only useful when ran via `GLib.idle_add()`
+        
+        :param data: Description
+        :type data: dict
+        """
         assert self.builder is not None
 
         # Get widget and set title
@@ -166,7 +182,15 @@ class Chlorine(Gtk.Application):
         assert isinstance(server_name_label, Gtk.Label)
         server_name_label.set_text(data["val"]["server"]["name"])
 
-    def build_channel_list(self, channels):
+    def build_channel_list(self, channels: list) -> None:
+        """
+        Builds widget for a list of channels
+
+        Only useful when ran via `GLib.idle_add()`
+        
+        :param channels: Description
+        :type channels: list
+        """
         assert self.builder is not None
 
         # Channel list
@@ -179,7 +203,7 @@ class Chlorine(Gtk.Application):
                 case "text":
                     box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
 
-                    image = Gtk.Image.new_from_icon_name("message-new")
+                    image = Gtk.Image.new_from_icon_name("mail-read")
                     label = Gtk.Label(label=channel["name"])
                     label.set_halign(Gtk.Align.START)
 
@@ -208,41 +232,61 @@ class Chlorine(Gtk.Application):
                     separator = Gtk.Separator()
                     container.append(separator)
 
-    def build_messages_list(self, messages):
+    def build_messages_list(self, messages: list) -> None:
+        """
+        Builds widget for a list of messages
+
+        Only useful when ran via `GLib.idle_add()`
+        
+        :param messages: List of messages from originChats server
+        :type messages: list
+        """
         assert self.builder is not None
 
         # Messages list
         container = self.builder.get_object("messages_list")
         assert isinstance(container, Gtk.Box)
 
+        # Clear old messages
+        child = container.get_first_child()
+        while child is not None:
+            next_child = child.get_next_sibling()
+            container.remove(child)
+            child = next_child
+
         for message in messages:
-            # Base message box
-            message_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-
-            # Profile picture
-            pfp = Gtk.Image.new_from_icon_name("user")
-            pfp.set_valign(Gtk.Align.START)
-            message_box.append(pfp)
-
-            # Content box
-            content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-
-            # Username label
-            user_label = Gtk.Label(label=message["user"])
-            user_label.set_halign(Gtk.Align.START)
-
-            # Message content
-            message_content = Gtk.Label(label=message["content"])
-            message_content.set_wrap(True)
-            message_content.set_wrap_mode(Pango.WrapMode.WORD)
-            message_content.set_halign(Gtk.Align.START)
-            message_content.set_selectable(True)
-            content_box.append(user_label)
-            content_box.append(message_content)
-
-            # Append to widget tree
-            message_box.append(content_box)
+            message_box = self.build_message(message)
             container.append(message_box)
+
+    def build_message(self, message) -> Gtk.Box:
+        # Base message box
+        message_box = Gtk.Box(spacing=6)
+        message_box.set_orientation(Gtk.Orientation.HORIZONTAL)
+
+        # Profile picture
+        pfp = Gtk.Image.new_from_icon_name("user-available")
+        pfp.set_valign(Gtk.Align.START)
+        message_box.append(pfp)
+
+        # Content box
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+
+        # Username label
+        user_label = Gtk.Label(label=message["user"])
+        user_label.set_halign(Gtk.Align.START)
+
+        # Message content
+        message_content = Gtk.Label(label=message["content"])
+        message_content.set_wrap(True)
+        message_content.set_wrap_mode(Pango.WrapMode.WORD)
+        message_content.set_halign(Gtk.Align.START)
+        message_content.set_selectable(True)
+        content_box.append(user_label)
+        content_box.append(message_content)
+
+        # Append to widget tree
+        message_box.append(content_box)
+        return message_box
 
 
 async def load_server_icon(url: str, widget: Gtk.Button):
