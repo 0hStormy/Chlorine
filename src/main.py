@@ -26,6 +26,7 @@ class Chlorine(Gtk.Application):
         self.stop_event = threading.Event()
         self.auth_thread_obj = None
         self.builder: Gtk.Builder | None = None
+        self.server: ws.Server | None = None
 
     def do_activate(self):
         icon_theme = Gtk.IconTheme.get_for_display(Gtk.Window().get_display())
@@ -53,8 +54,9 @@ class Chlorine(Gtk.Application):
         # Connect to originChats server
         selected_server = config.read_from_config("servers")[0]
         server = ws.Server(
-            selected_server, on_event=self.handle_ws_event
+            selected_server, on_event=self.handle_ws_event_async
         )
+        self.server = server
         threading.Thread(
             target=lambda: asyncio.run(server.listen()), daemon=True
         ).start()
@@ -168,7 +170,7 @@ class Chlorine(Gtk.Application):
         """
         asyncio.run(self.load_server_buttons(builder))
 
-    def handle_ws_event(self, event_type: str, data) -> None:
+    async def handle_ws_event(self, event_type: str, data) -> None:
         """
         Bridge between websocket connection and frontend UI
 
@@ -180,12 +182,30 @@ class Chlorine(Gtk.Application):
         match event_type:
             case "ready":
                 GLib.idle_add(self.set_server_name, data)
+
             case "channels_get":
                 GLib.idle_add(self.build_channel_list, data)
+
             case "messages_get":
-                GLib.idle_add(self.build_messages_list, data)
+                asyncio.create_task(self.build_messages_list(data))
+
             case "message_new":
-                GLib.idle_add(self.build_single_message, data)
+                asyncio.create_task(self.build_single_message(data))
+
+    def handle_ws_event_async(self, event_type: str, data) -> None:
+        """
+        Bridge between websocket connection and frontend UI
+
+        :param event_type: Event sent from server
+        :type event_type: str
+        :param data: Data sent from bridge
+        """
+        assert self.server is not None
+        assert self.server.loop is not None
+        asyncio.run_coroutine_threadsafe(
+            self.handle_ws_event(event_type, data),
+            self.server.loop
+        )
 
     def scroll_to_bottom(self, scrollable: Gtk.ScrolledWindow):
         def do_scroll():
@@ -217,10 +237,11 @@ class Chlorine(Gtk.Application):
 
         Only useful when ran via `GLib.idle_add()`
 
-        :param channels: Description
+        :param channels: List of channels
         :type channels: list
         """
         assert self.builder is not None
+        assert isinstance(self.server, ws.Server)
 
         # Channel list
         container = self.builder.get_object("channel_list")
@@ -234,13 +255,15 @@ class Chlorine(Gtk.Application):
 
                     image = Gtk.Image.new_from_icon_name("mail-read")
                     label = Gtk.Label(label=channel["name"])
-                    label.set_halign(Gtk.Align.START)
+                    label.set_halign(Gtk.Align.START)           
 
                     box.append(image)
                     box.append(label)
 
-                    button = Gtk.Button(css_classes=["flat"])
+                    button = Gtk.ToggleButton(css_classes=["flat"])
                     button.set_child(box)
+                    if channel["name"] == self.server.channel:
+                        button.set_active(True)
 
                     container.append(button)
                 case "voice":
@@ -261,7 +284,7 @@ class Chlorine(Gtk.Application):
                     separator = Gtk.Separator()
                     container.append(separator)
 
-    def build_single_message(self, message: dict) -> None:
+    async def build_single_message(self, message: dict) -> None:
         """
         Builds widget for a single message
 
@@ -276,13 +299,13 @@ class Chlorine(Gtk.Application):
         assert isinstance(container, Gtk.Box)
 
         message_box = self.build_message(message)
-        container.append(message_box)
+        container.append(await message_box)
 
         scroll = self.builder.get_object("messages_list_scroll")
         assert isinstance(scroll, Gtk.ScrolledWindow)
         self.scroll_to_bottom(scroll)
 
-    def build_messages_list(self, messages: list) -> None:
+    async def build_messages_list(self, messages: list) -> None:
         """
         Builds widget for a list of messages
 
@@ -306,21 +329,25 @@ class Chlorine(Gtk.Application):
 
         for message in messages:
             message_box = self.build_message(message)
-            container.append(message_box)
+            container.append(await message_box)
         
         scroll = self.builder.get_object("messages_list_scroll")
         assert isinstance(scroll, Gtk.ScrolledWindow)
         self.scroll_to_bottom(scroll)
 
-    def build_message(self, message: dict) -> Gtk.Box:
+    async def build_message(self, message: dict) -> Gtk.Box:
         # Base message box
         message_box = Gtk.Box(spacing=6)
         message_box.set_orientation(Gtk.Orientation.HORIZONTAL)
 
         # Profile picture
-        pfp = Gtk.Image.new_from_icon_name("user-available")
+        pfp = Gtk.Image.new_from_icon_name("pfp")
+        pfp.set_pixel_size(32)
         pfp.set_valign(Gtk.Align.START)
         message_box.append(pfp)
+
+        url = f"https://avatars.rotur.dev/{message["user"]}"
+        asyncio.create_task(load_pfp(url, pfp))
 
         # Content box
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -341,6 +368,20 @@ class Chlorine(Gtk.Application):
         # Append to widget tree
         message_box.append(content_box)
         return message_box
+
+
+async def load_pfp(url: str, image: Gtk.Image):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            data = await resp.read()
+
+    texture = Gdk.Texture.new_from_bytes(GLib.Bytes.new(data))
+
+    def apply():
+        image.set_from_paintable(texture)
+        image.set_pixel_size(32)
+
+    GLib.idle_add(apply)
 
 
 async def load_server_icon(url: str, widget: Gtk.Button):

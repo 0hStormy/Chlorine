@@ -1,3 +1,8 @@
+"""
+Websocket handler for Chlorine.
+Made with <3 by Stormy
+"""
+
 import requests
 import websockets
 import asyncio
@@ -56,6 +61,7 @@ class Server:
                 "handshake": self.handshake,
                 "auth_success": self.auth_success,
                 "ready": self.ready,
+                "ping": self.ping,
                 "channels_get": self.channels_get,
                 "messages_get": self.messages_get,
                 "message_new": self.message_new
@@ -135,6 +141,14 @@ class Server:
 
         # Get messages
         payload = {"cmd": "messages_get", "channel": self.channel}
+        await self.websocket.send(json.dumps(payload))
+
+    async def ping(self):
+        """
+        Handles ping server back
+        """
+        assert self.websocket is not None
+        payload = {"cmd": "pong", "val": "pong"}
         await self.websocket.send(json.dumps(payload))
 
     async def channels_get(self):
