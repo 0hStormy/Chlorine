@@ -146,7 +146,7 @@ class Server:
         """
         assert self.websocket is not None
 
-        if self.data == self.channel:
+        if self.data["channel"] == self.channel:
             message = self.data["message"]
             if self.on_event:
                 self.on_event("message_new", message)

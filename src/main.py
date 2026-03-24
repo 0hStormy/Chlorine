@@ -158,6 +158,7 @@ class Chlorine(Gtk.Application):
         :type event_type: str
         :param data: Data sent from bridge
         """
+        assert self.builder is not None
         match event_type:
             case "ready":
                 GLib.idle_add(self.set_server_name, data)
@@ -167,6 +168,14 @@ class Chlorine(Gtk.Application):
                 GLib.idle_add(self.build_messages_list, data)
             case "message_new":
                 GLib.idle_add(self.build_single_message, data)
+
+    def scroll_to_bottom(self, scrollable: Gtk.ScrolledWindow):
+        def do_scroll():
+            adj = scrollable.get_vadjustment()
+            adj.set_value(adj.get_upper() - adj.get_page_size())
+            return False
+
+        GLib.idle_add(do_scroll)
 
     def set_server_name(self, data: dict):
         """
@@ -251,6 +260,10 @@ class Chlorine(Gtk.Application):
         message_box = self.build_message(message)
         container.append(message_box)
 
+        scroll = self.builder.get_object("messages_list_scroll")
+        assert isinstance(scroll, Gtk.ScrolledWindow)
+        self.scroll_to_bottom(scroll)
+
     def build_messages_list(self, messages: list) -> None:
         """
         Builds widget for a list of messages
@@ -276,6 +289,10 @@ class Chlorine(Gtk.Application):
         for message in messages:
             message_box = self.build_message(message)
             container.append(message_box)
+        
+        scroll = self.builder.get_object("messages_list_scroll")
+        assert isinstance(scroll, Gtk.ScrolledWindow)
+        self.scroll_to_bottom(scroll)
 
     def build_message(self, message: dict) -> Gtk.Box:
         # Base message box

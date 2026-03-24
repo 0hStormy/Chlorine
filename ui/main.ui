@@ -78,7 +78,7 @@
           <object class="GtkBox">
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkScrolledWindow">
+              <object class="GtkScrolledWindow" id="messages_list_scroll">
                 <child>
                   <object class="GtkBox" id="messages_list">
                     <property name="hexpand">True</property>
