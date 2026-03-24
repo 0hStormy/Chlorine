@@ -145,10 +145,11 @@ class Server:
         Handles receiving a new user message from the server
         """
         assert self.websocket is not None
-        message = self.data["message"]
 
-        if self.on_event:
-            self.on_event("message_new", message)
+        if self.data == self.channel:
+            message = self.data["message"]
+            if self.on_event:
+                self.on_event("message_new", message)
 
 
 async def get_server_info(url: str) -> dict:
