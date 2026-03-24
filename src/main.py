@@ -153,7 +153,7 @@ class Chlorine(Gtk.Application):
     def handle_ws_event(self, event_type: str, data) -> None:
         """
         Bridge between websocket connection and frontend UI
-        
+
         :param event_type: Event sent from server
         :type event_type: str
         :param data: Data sent from bridge
@@ -165,13 +165,15 @@ class Chlorine(Gtk.Application):
                 GLib.idle_add(self.build_channel_list, data)
             case "messages_get":
                 GLib.idle_add(self.build_messages_list, data)
+            case "message_new":
+                GLib.idle_add(self.build_single_message, data)
 
     def set_server_name(self, data: dict):
         """
         Sets name of server in channel list
 
         Only useful when ran via `GLib.idle_add()`
-        
+
         :param data: Description
         :type data: dict
         """
@@ -187,7 +189,7 @@ class Chlorine(Gtk.Application):
         Builds widget for a list of channels
 
         Only useful when ran via `GLib.idle_add()`
-        
+
         :param channels: Description
         :type channels: list
         """
@@ -232,12 +234,29 @@ class Chlorine(Gtk.Application):
                     separator = Gtk.Separator()
                     container.append(separator)
 
+    def build_single_message(self, message: dict) -> None:
+        """
+        Builds widget for a single message
+
+        Only useful when ran via `GLib.idle_add()`
+
+        :param messages: User message from originChats server
+        :type messages: list
+        """
+        assert self.builder is not None
+
+        container = self.builder.get_object("messages_list")
+        assert isinstance(container, Gtk.Box)
+
+        message_box = self.build_message(message)
+        container.append(message_box)
+
     def build_messages_list(self, messages: list) -> None:
         """
         Builds widget for a list of messages
 
         Only useful when ran via `GLib.idle_add()`
-        
+
         :param messages: List of messages from originChats server
         :type messages: list
         """
@@ -258,7 +277,7 @@ class Chlorine(Gtk.Application):
             message_box = self.build_message(message)
             container.append(message_box)
 
-    def build_message(self, message) -> Gtk.Box:
+    def build_message(self, message: dict) -> Gtk.Box:
         # Base message box
         message_box = Gtk.Box(spacing=6)
         message_box.set_orientation(Gtk.Orientation.HORIZONTAL)
