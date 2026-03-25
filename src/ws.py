@@ -62,6 +62,7 @@ class Server:
                 "auth_success": self.auth_success,
                 "ready": self.ready,
                 "ping": self.ping,
+                "pong": self.pong,
                 "channels_get": self.channels_get,
                 "messages_get": self.messages_get,
                 "message_new": self.message_new
@@ -148,8 +149,14 @@ class Server:
         Handles ping server back
         """
         assert self.websocket is not None
-        payload = {"cmd": "pong", "val": "pong"}
+        payload = {"cmd": "ping", "val": "pong"}
         await self.websocket.send(json.dumps(payload))
+
+    async def pong(self):
+        """
+        Handles server pong back
+        """
+        assert self.websocket is not None
 
     async def channels_get(self):
         """

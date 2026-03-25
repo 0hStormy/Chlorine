@@ -308,6 +308,8 @@ class Chlorine(Gtk.Application):
         assert isinstance(scroll, Gtk.ScrolledWindow)
         self.scroll_to_bottom(scroll)
 
+        self.last_user = message["user"]
+
     async def build_messages_list(self, messages: list) -> None:
         """
         Builds widget for a list of messages
