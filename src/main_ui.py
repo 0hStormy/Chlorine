@@ -152,10 +152,12 @@ def handle_ws_event_async(app, event_type: str, data) -> None:
 def scroll_to_bottom(scrollable: Gtk.ScrolledWindow):
     def do_scroll():
         adj = scrollable.get_vadjustment()
-        adj.set_value(adj.get_upper() - adj.get_page_size())
+        bottom = max(0.0, adj.get_upper() - adj.get_page_size())
+        adj.set_value(bottom)
         return False
 
-    GLib.idle_add(do_scroll)
+    GLib.idle_add(do_scroll, priority=GLib.PRIORITY_DEFAULT_IDLE)
+    GLib.timeout_add(16, do_scroll)
 
 
 def set_server_name(app, data: dict):
