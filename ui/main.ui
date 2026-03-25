@@ -57,6 +57,7 @@
             <property name="spacing">6</property>
             <child>
               <object class="GtkLabel" id="server_name_label">
+                <property name="css-classes">title-4</property>
                 <property name="label">Unknown Server</property>
               </object>
             </child>
