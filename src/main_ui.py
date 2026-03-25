@@ -3,16 +3,16 @@ Main/chat UI logic for Chlorine.
 """
 
 import aiohttp
+import gi
 import asyncio
 import threading
-
-import gi
-
+from urllib.parse import quote
 import config
+import image_utils
 import ws
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import GLib, Gtk, Gdk, Pango  # type: ignore
+from gi.repository import GLib, Gtk, Pango  # type: ignore
 
 
 def load_main_ui(app):
@@ -60,7 +60,7 @@ def load_main_ui(app):
     win.present()
 
 
-def load_server_buttons(app, builder: Gtk.Builder):
+async def load_server_buttons(app, builder: Gtk.Builder):
     """
     Taskify all servers and gather them to load the server buttons
 
@@ -70,18 +70,24 @@ def load_server_buttons(app, builder: Gtk.Builder):
     servers = config.read_from_config("servers")
     server_box = builder.get_object("server_list")
     assert isinstance(server_box, Gtk.Box)
-    for server in reversed(servers):
-        process_server(server, server_box)
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            process_server(server, server_box, session)
+            for server in reversed(servers)
+        ]
+        await asyncio.gather(*tasks)
 
 
-def process_server(server, server_box: Gtk.Box):
+async def process_server(
+    server, server_box: Gtk.Box, session: aiohttp.ClientSession
+):
     """
     Add a single server to server list
 
     :param server: Server list
     :param server_box: Gtk.Box to add to
     """
-    info = asyncio.run(ws.get_server_info(server))["val"]["server"]
+    info = (await ws.get_server_info(server))["val"]["server"]
 
     image = Gtk.Image.new_from_icon_name("network-disconnect")
 
@@ -92,7 +98,7 @@ def process_server(server, server_box: Gtk.Box):
 
     GLib.idle_add(server_box.prepend, button)
 
-    asyncio.run(load_server_icon(info["icon"], button))
+    await image_utils.load_server_icon(info["icon"], button, session)
 
 
 def server_buttons_async(app, builder: Gtk.Builder):
@@ -102,7 +108,7 @@ def server_buttons_async(app, builder: Gtk.Builder):
     :param app: Chlorine app instance
     :param builder: GTK Builder instance
     """
-    load_server_buttons(app, builder)
+    asyncio.run(load_server_buttons(app, builder))
 
 
 async def handle_ws_event(app, event_type: str, data) -> None:
@@ -306,8 +312,9 @@ async def build_message(app, message: dict) -> Gtk.Box:
         pfp.set_valign(Gtk.Align.START)
         message_box.append(pfp)
 
-        url = f"https://avatars.rotur.dev/{message['user']}"
-        asyncio.create_task(load_pfp(url, pfp))
+        username = quote(message["user"], safe="")
+        url = f"https://avatars.rotur.dev/{username}"
+        asyncio.create_task(image_utils.load_pfp(url, pfp))
 
         # Username label
         user_label = Gtk.Label(label=message["user"])
@@ -323,36 +330,3 @@ async def build_message(app, message: dict) -> Gtk.Box:
     message_box.append(content_box)
     return message_box
 
-
-async def load_pfp(url: str, image: Gtk.Image):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            data = await resp.read()
-
-    texture = Gdk.Texture.new_from_bytes(GLib.Bytes.new(data))
-
-    def apply():
-        image.set_from_paintable(texture)
-        image.set_pixel_size(32)
-
-    GLib.idle_add(apply)
-
-
-async def load_server_icon(url: str, widget: Gtk.Button):
-    """
-    Downloads a single server icon and apply it to a widget's child
-
-    :param url: URL to icon
-    :type url: str
-    :param widget: Widget to set child Gtk.Image on
-    :type widget: Gtk.Button
-    """
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            data = await resp.read()
-
-    texture = Gdk.Texture.new_from_bytes(GLib.Bytes.new(data))
-    image = Gtk.Image.new_from_paintable(texture)
-    image.set_pixel_size(34)
-
-    GLib.idle_add(widget.set_child, image)

@@ -3,6 +3,7 @@ Entry point file for Chlorine.
 Initializes the GTK application and handles UI loading and websocket events.
 """
 
+import aiohttp
 import gi
 import asyncio
 import sys
@@ -25,6 +26,7 @@ class Chlorine(Gtk.Application):
         self.auth_thread_obj = None
         self.builder: Gtk.Builder | None = None
         self.server: ws.Server | None = None
+        self.session: aiohttp.ClientSession | None = None
         self.last_user = ""
 
     def do_activate(self):
@@ -50,10 +52,14 @@ class Chlorine(Gtk.Application):
         auth_ui.open_linking_page(*_)
 
     async def load_server_buttons(self, builder: Gtk.Builder):
-        main_ui.load_server_buttons(self, builder)
+        await main_ui.load_server_buttons(self, builder)
 
     async def process_server(self, server, server_box: Gtk.Box):
-        main_ui.process_server(server, server_box)
+        session = aiohttp.ClientSession()
+        try:
+            await main_ui.process_server(server, server_box, session)
+        finally:
+            await session.close()
 
     def server_buttons_async(self, builder: Gtk.Builder):
         main_ui.server_buttons_async(self, builder)
