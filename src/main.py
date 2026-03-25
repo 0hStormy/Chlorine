@@ -27,6 +27,7 @@ class Chlorine(Gtk.Application):
         self.auth_thread_obj = None
         self.builder: Gtk.Builder | None = None
         self.server: ws.Server | None = None
+        self.last_user = ""
 
     def do_activate(self):
         icon_theme = Gtk.IconTheme.get_for_display(Gtk.Window().get_display())
@@ -251,7 +252,8 @@ class Chlorine(Gtk.Application):
         for channel in channels:
             match channel["type"]:
                 case "text":
-                    box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                    box = Gtk.Box(spacing=6)
+                    box.set_orientation(Gtk.Orientation.HORIZONTAL)
 
                     image = Gtk.Image.new_from_icon_name("mail-read")
                     label = Gtk.Label(label=channel["name"])
@@ -267,7 +269,8 @@ class Chlorine(Gtk.Application):
 
                     container.append(button)
                 case "voice":
-                    box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                    box = Gtk.Box(spacing=6)
+                    box.set_orientation(Gtk.Orientation.HORIZONTAL)
 
                     image = Gtk.Image.new_from_icon_name("call-start")
                     label = Gtk.Label(label=channel["name"])
@@ -330,31 +333,18 @@ class Chlorine(Gtk.Application):
         for message in messages:
             message_box = self.build_message(message)
             container.append(await message_box)
+            self.last_user = message["user"]
         
         scroll = self.builder.get_object("messages_list_scroll")
         assert isinstance(scroll, Gtk.ScrolledWindow)
         self.scroll_to_bottom(scroll)
 
     async def build_message(self, message: dict) -> Gtk.Box:
+        group_message = self.last_user != message["user"]
+
         # Base message box
         message_box = Gtk.Box(spacing=6)
         message_box.set_orientation(Gtk.Orientation.HORIZONTAL)
-
-        # Profile picture
-        pfp = Gtk.Image.new_from_icon_name("pfp")
-        pfp.set_pixel_size(32)
-        pfp.set_valign(Gtk.Align.START)
-        message_box.append(pfp)
-
-        url = f"https://avatars.rotur.dev/{message["user"]}"
-        asyncio.create_task(load_pfp(url, pfp))
-
-        # Content box
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-
-        # Username label
-        user_label = Gtk.Label(label=message["user"])
-        user_label.set_halign(Gtk.Align.START)
 
         # Message content
         message_content = Gtk.Label(label=message["content"])
@@ -362,8 +352,31 @@ class Chlorine(Gtk.Application):
         message_content.set_wrap_mode(Pango.WrapMode.WORD)
         message_content.set_halign(Gtk.Align.START)
         message_content.set_selectable(True)
-        content_box.append(user_label)
+
+        # Content box
+        content_box = Gtk.Box()
+        content_box.set_orientation(Gtk.Orientation.VERTICAL)
+
+        if group_message:
+            # Profile picture
+            pfp = Gtk.Image.new_from_icon_name("pfp")
+            pfp.set_pixel_size(32)
+            pfp.set_valign(Gtk.Align.START)
+            message_box.append(pfp)
+
+            url = f"https://avatars.rotur.dev/{message["user"]}"
+            asyncio.create_task(load_pfp(url, pfp))
+
+            # Username label
+            user_label = Gtk.Label(label=message["user"])
+            user_label.set_halign(Gtk.Align.START)
+            content_box.append(user_label)
+        else:
+            message_box.set_margin_bottom(0)
+            message_content.set_margin_start(38)
+
         content_box.append(message_content)
+
 
         # Append to widget tree
         message_box.append(content_box)
