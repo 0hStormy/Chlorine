@@ -12,7 +12,7 @@ import config
 import ws
 import auth_ui
 import main_ui
-from ui_utils import load_css, set_system_theme
+import ui_utils
 
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk  # type: ignore
@@ -30,7 +30,7 @@ class Chlorine(Gtk.Application):
     def do_activate(self):
         icon_theme = Gtk.IconTheme.get_for_display(Gtk.Window().get_display())
         icon_theme.add_search_path("../assets")
-        load_css("../ui/style.css")
+        ui_utils.load_css("../ui/style.css")
 
         if auth.is_authenticated():
             self.load_main_ui()
@@ -85,7 +85,7 @@ class Chlorine(Gtk.Application):
 
 if __name__ == "__main__":
     try:
-        set_system_theme()
+        ui_utils.set_system_theme()
         config.create_config()
         app = Chlorine()
         app.run(sys.argv)
