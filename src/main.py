@@ -1,5 +1,6 @@
 """
-Frontend/UI for Chlorine, handles user actions and displays content to user.
+Entry point file for Chlorine.
+Initializes the GTK application and handles UI loading and websocket events.
 """
 
 import gi
