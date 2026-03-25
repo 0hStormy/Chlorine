@@ -1,6 +1,5 @@
 """
 Handles configuration file for Chlorine.
-Made with <3 by Stormy
 """
 
 import json

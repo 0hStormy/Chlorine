@@ -1,6 +1,5 @@
 """
 Websocket handler for Chlorine.
-Made with <3 by Stormy
 """
 
 import requests

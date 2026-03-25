@@ -1,6 +1,5 @@
 """
 Frontend/UI for Chlorine, handles user actions and displays content to user.
-Made with <3 by Stormy
 """
 
 import gi

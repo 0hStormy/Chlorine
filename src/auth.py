@@ -1,6 +1,5 @@
 """
 Rotur account authentication/linking is handled in this script.
-Made with <3 by Stormy
 """
 
 import requests
