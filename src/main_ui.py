@@ -246,12 +246,11 @@ async def build_single_message(app, message: dict) -> None:
 
     container = app.builder.get_object("messages_list")
     assert isinstance(container, Gtk.Box)
-
-    message_box = build_message(app, message)
-    container.append(await message_box)
-
     scroll = app.builder.get_object("messages_list_scroll")
     assert isinstance(scroll, Gtk.ScrolledWindow)
+
+    message_box = build_message(app, message, scroll)
+    container.append(await message_box)
     scroll_to_bottom(scroll)
 
     app.last_user = message["user"]
@@ -271,6 +270,8 @@ async def build_messages_list(app, messages: list) -> None:
     # Messages list
     container = app.builder.get_object("messages_list")
     assert isinstance(container, Gtk.Box)
+    scroll = app.builder.get_object("messages_list_scroll")
+    assert isinstance(scroll, Gtk.ScrolledWindow)
 
     # Clear old messages
     child = container.get_first_child()
@@ -280,34 +281,37 @@ async def build_messages_list(app, messages: list) -> None:
         child = next_child
 
     for message in messages:
-        message_box = build_message(app, message)
+        message_box = build_message(app, message, scroll)
         container.append(await message_box)
         app.last_user = message["user"]
-
-    scroll = app.builder.get_object("messages_list_scroll")
-    assert isinstance(scroll, Gtk.ScrolledWindow)
     scroll_to_bottom(scroll)
 
 
-async def build_message(app, message: dict) -> Gtk.Box:
-    group_message = app.last_user != message["user"]
+async def build_message(
+    app, message: dict, scroll: Gtk.ScrolledWindow | None = None
+) -> Gtk.Box:
+    is_new_user = app.last_user != message["user"]
 
     # Base message box
-    message_box = Gtk.Box(spacing=6)
-    message_box.set_orientation(Gtk.Orientation.HORIZONTAL)
+    message_box = Gtk.Box(spacing=6, orientation=Gtk.Orientation.HORIZONTAL)
+
+    # Extract image URLs from message content
+    content, image_urls = await image_utils.extract_image_urls(message["content"])
+
+    # Image box
+    images_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
     # Message content
-    message_content = Gtk.Label(label=message["content"])
+    message_content = Gtk.Label(label=content)
     message_content.set_wrap(True)
     message_content.set_wrap_mode(Pango.WrapMode.WORD)
     message_content.set_halign(Gtk.Align.START)
     message_content.set_selectable(True)
 
     # Content box
-    content_box = Gtk.Box()
-    content_box.set_orientation(Gtk.Orientation.VERTICAL)
+    content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
-    if group_message:
+    if is_new_user:
         # Profile picture
         pfp = Gtk.Image.new_from_icon_name("pfp")
         pfp.set_pixel_size(32)
@@ -325,10 +329,32 @@ async def build_message(app, message: dict) -> Gtk.Box:
     else:
         message_box.set_margin_bottom(0)
         message_content.set_margin_start(38)
+        images_box.set_margin_start(38)
 
     content_box.append(message_content)
+    if image_urls:
+        def keep_scrolled_to_bottom() -> None:
+            if scroll is not None:
+                scroll_to_bottom(scroll)
 
-    # Append to widget tree
+        for url in image_urls:
+            picture = Gtk.Picture()
+            picture.set_halign(Gtk.Align.START)
+            picture.set_keep_aspect_ratio(True)
+            picture.set_can_shrink(True)
+            if hasattr(Gtk, "ContentFit"):
+                picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+            images_box.append(picture)
+            asyncio.create_task(
+                image_utils.load_image(
+                    url,
+                    picture,
+                    on_loaded=keep_scrolled_to_bottom,
+                )
+            )
+
+        content_box.append(images_box)
+
     message_box.append(content_box)
     return message_box
 
