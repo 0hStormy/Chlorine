@@ -172,10 +172,15 @@ class Server:
         Handles getting messages from server and adding them to UI
         """
         assert self.websocket is not None
-        messages = self.data["messages"]
+        payload = {
+            "channel": self.data.get("channel"),
+            "messages": self.data.get("messages", []),
+        }
+
+        print(self.data)
 
         if self.on_event:
-            self.on_event("messages_get", messages)
+            self.on_event("messages_get", payload)
 
     async def message_new(self):
         """

@@ -13,6 +13,7 @@ import config
 import ws
 import auth_ui
 import main_ui
+import channels_ui
 import ui_utils
 
 gi.require_version("Gtk", "4.0")
@@ -74,19 +75,22 @@ class Chlorine(Gtk.Application):
         main_ui.scroll_to_bottom(scrollable)
 
     def set_server_name(self, data: dict):
-        main_ui.set_server_name(self, data)
+        channels_ui.set_server_name(self, data)
 
     def build_channel_list(self, channels: list) -> None:
-        main_ui.build_channel_list(self, channels)
+        channels_ui.build_channel_list(self, channels)
 
-    async def build_single_message(self, message: dict) -> None:
-        await main_ui.build_single_message(self, message)
+    def cancel_message_loading(self) -> None:
+        main_ui.cancel_message_loading(self)
 
-    async def build_messages_list(self, messages: list) -> None:
-        await main_ui.build_messages_list(self, messages)
+    def build_single_message(self, message: dict) -> None:
+        main_ui.build_single_message(self, message)
 
-    async def build_message(self, message: dict) -> Gtk.Box:
-        return await main_ui.build_message(self, message)
+    def build_messages_list(self, messages: list) -> None:
+        main_ui.build_messages_list(self, messages)
+
+    def build_message(self, message: dict) -> Gtk.Box:
+        return main_ui.build_message(self, message)
 
 
 if __name__ == "__main__":

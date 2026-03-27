@@ -15,6 +15,55 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk, Pango  # type: ignore
 
 
+def track_message_task(app, task) -> None:
+    if not hasattr(app, "message_loading_tasks"):
+        app.message_loading_tasks = set()
+    app.message_loading_tasks.add(task)
+    task.add_done_callback(lambda t: app.message_loading_tasks.discard(t))
+
+
+def cancel_message_loading(app) -> None:
+    if hasattr(app, "messages_build_source_id") and app.messages_build_source_id:
+        GLib.source_remove(app.messages_build_source_id)
+        app.messages_build_source_id = 0
+
+    if hasattr(app, "message_loading_tasks"):
+        for task in list(app.message_loading_tasks):
+            task.cancel()
+        app.message_loading_tasks.clear()
+
+
+def extract_image_urls(text: str) -> tuple[str, list[str]]:
+    urls = []
+    words = text.split()
+    remaining_words = []
+    for word in words:
+        candidate = word.strip("()[]{}<>.,!?\"'")
+        if image_utils.is_http_url(candidate):
+            urls.append(candidate)
+            continue
+        remaining_words.append(word)
+
+    no_url = " ".join(remaining_words).strip()
+    return no_url, urls
+
+
+def _handle_messages_get_main_thread(app, channel: str | None, messages: list):
+    assert isinstance(app.server, ws.Server)
+
+    if channel is not None and channel != app.server.channel:
+        return False
+
+    cancel_message_loading(app)
+    build_messages_list(app, messages)
+    return False
+
+
+def _handle_message_new_main_thread(app, message: dict):
+    build_single_message(app, message)
+    return False
+
+
 def load_main_ui(app):
     builder = Gtk.Builder()
     builder.add_from_file("../ui/main.ui")
@@ -128,10 +177,22 @@ async def handle_ws_event(app, event_type: str, data) -> None:
             GLib.idle_add(app.build_channel_list, data)
 
         case "messages_get":
-            asyncio.create_task(app.build_messages_list(data))
+            if isinstance(data, dict):
+                channel = data.get("channel")
+                messages = data.get("messages", [])
+            else:
+                channel = None
+                messages = data
+
+            app.messages_build_source_id = GLib.idle_add(
+                _handle_messages_get_main_thread,
+                app,
+                channel,
+                messages,
+            )
 
         case "message_new":
-            asyncio.create_task(app.build_single_message(data))
+            GLib.idle_add(_handle_message_new_main_thread, app, data)
 
 
 def handle_ws_event_async(app, event_type: str, data) -> None:
@@ -160,80 +221,7 @@ def scroll_to_bottom(scrollable: Gtk.ScrolledWindow):
     GLib.timeout_add(16, do_scroll)
 
 
-def set_server_name(app, data: dict):
-    """
-    Sets name of server in channel list
-
-    Only useful when ran via `GLib.idle_add()`
-
-    :param data: Description
-    :type data: dict
-    """
-    assert app.builder is not None
-
-    # Get widget and set title
-    server_name_label = app.builder.get_object("server_name_label")
-    assert isinstance(server_name_label, Gtk.Label)
-    server_name_label.set_text(data["val"]["server"]["name"])
-
-
-def build_channel_list(app, channels: list) -> None:
-    """
-    Builds widget for a list of channels
-
-    Only useful when ran via `GLib.idle_add()`
-
-    :param channels: List of channels
-    :type channels: list
-    """
-    assert app.builder is not None
-    assert isinstance(app.server, ws.Server)
-
-    # Channel list
-    container = app.builder.get_object("channel_list")
-    assert isinstance(container, Gtk.Box)
-
-    # Build channel list widgets
-    for channel in channels:
-        match channel["type"]:
-            case "text":
-                box = Gtk.Box(spacing=6)
-                box.set_orientation(Gtk.Orientation.HORIZONTAL)
-
-                image = Gtk.Image.new_from_icon_name("mail-read")
-                label = Gtk.Label(label=channel["name"])
-                label.set_halign(Gtk.Align.START)
-
-                box.append(image)
-                box.append(label)
-
-                button = Gtk.ToggleButton(css_classes=["flat"])
-                button.set_child(box)
-                if channel["name"] == app.server.channel:
-                    button.set_active(True)
-
-                container.append(button)
-            case "voice":
-                box = Gtk.Box(spacing=6)
-                box.set_orientation(Gtk.Orientation.HORIZONTAL)
-
-                image = Gtk.Image.new_from_icon_name("call-start")
-                label = Gtk.Label(label=channel["name"])
-                label.set_halign(Gtk.Align.START)
-
-                box.append(image)
-                box.append(label)
-
-                button = Gtk.Button(css_classes=["flat"])
-                button.set_child(box)
-
-                container.append(button)
-            case "separator":
-                separator = Gtk.Separator()
-                container.append(separator)
-
-
-async def build_single_message(app, message: dict) -> None:
+def build_single_message(app, message: dict) -> None:
     """
     Builds widget for a single message
 
@@ -250,13 +238,13 @@ async def build_single_message(app, message: dict) -> None:
     assert isinstance(scroll, Gtk.ScrolledWindow)
 
     message_box = build_message(app, message, scroll)
-    container.append(await message_box)
+    container.append(message_box)
     scroll_to_bottom(scroll)
 
     app.last_user = message["user"]
 
 
-async def build_messages_list(app, messages: list) -> None:
+def build_messages_list(app, messages: list) -> None:
     """
     Builds widget for a list of messages
 
@@ -282,12 +270,12 @@ async def build_messages_list(app, messages: list) -> None:
 
     for message in messages:
         message_box = build_message(app, message, scroll)
-        container.append(await message_box)
+        container.append(message_box)
         app.last_user = message["user"]
     scroll_to_bottom(scroll)
 
 
-async def build_message(
+def build_message(
     app, message: dict, scroll: Gtk.ScrolledWindow | None = None
 ) -> Gtk.Box:
     is_new_user = app.last_user != message["user"]
@@ -296,7 +284,7 @@ async def build_message(
     message_box = Gtk.Box(spacing=6, orientation=Gtk.Orientation.HORIZONTAL)
 
     # Extract image URLs from message content
-    content, image_urls = await image_utils.extract_image_urls(message["content"])
+    content, image_urls = extract_image_urls(message["content"])
 
     # Image box
     images_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -320,7 +308,13 @@ async def build_message(
 
         username = quote(message["user"], safe="")
         url = f"https://avatars.rotur.dev/{username}"
-        asyncio.create_task(image_utils.load_pfp(url, pfp))
+        assert isinstance(app.server, ws.Server)
+        assert app.server.loop is not None
+        pfp_task = asyncio.run_coroutine_threadsafe(
+            image_utils.load_pfp(url, pfp),
+            app.server.loop,
+        )
+        track_message_task(app, pfp_task)
 
         # Username label
         user_label = Gtk.Label(label=message["user"])
@@ -345,13 +339,17 @@ async def build_message(
             if hasattr(Gtk, "ContentFit"):
                 picture.set_content_fit(Gtk.ContentFit.CONTAIN)
             images_box.append(picture)
-            asyncio.create_task(
+            assert isinstance(app.server, ws.Server)
+            assert app.server.loop is not None
+            image_task = asyncio.run_coroutine_threadsafe(
                 image_utils.load_image(
                     url,
                     picture,
                     on_loaded=keep_scrolled_to_bottom,
-                )
+                ),
+                app.server.loop,
             )
+            track_message_task(app, image_task)
 
         content_box.append(images_box)
 
