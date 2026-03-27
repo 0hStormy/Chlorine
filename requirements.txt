@@ -1,0 +1,4 @@
+aiohttp==3.13.3
+platformdirs==4.9.4
+Requests==2.33.0
+websockets==16.0
